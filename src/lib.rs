@@ -8,3 +8,4 @@ pub mod registers;
 pub mod memory;
 pub mod motherboard;
 pub mod instructions;
+pub mod io;
