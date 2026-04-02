@@ -20,10 +20,10 @@ impl<'a> SystemBus<'a> {
             data_lane: 0,
         }
     }
-    
+
     #[inline]
     pub fn full_address(&self) -> Addr {
-        (self.address_lane as Addr) << 8 | self.data_lane as Addr
+        (self.address_lane as Addr) << 8 | self.address_latch as Addr
     }
 
     #[inline]
@@ -50,7 +50,7 @@ impl<'a> SystemBus<'a> {
             if !pins.rd{
                 self.data_lane = self.memory.read(full_address);
                 pins.ad = self.data_lane;
-                
+
             }
             else if !pins.wr{
                 self.data_lane = pins.ad;
