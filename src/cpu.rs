@@ -4,6 +4,8 @@ use crate::flags::Flags;
 use crate::alu::Alu;
 use crate::cu::ControlUnit;
 
+use std::fmt;
+
 pub struct CPU {
     pub regs: Registers,
     pub pins: Pins,
@@ -12,7 +14,23 @@ pub struct CPU {
     pub control: ControlUnit,
 }
 
+impl fmt::Display for CPU {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.regs)?;
+        write!(f, "Flags: {}", self.flags)
+    }
+}
+
 impl CPU {
+    pub fn get_psw(&self) -> u16 {
+        ((self.regs.a.val as u16) << 8) | (self.flags.pack() as u16)
+    }
+
+    pub fn set_psw(&mut self, val: u16) {
+        self.regs.a.val = (val >> 8) as u8;
+        self.flags.unpack(val as u8);
+    }
+
     pub fn new() -> Self {
         CPU {
             regs: Registers::new(),
@@ -107,30 +125,10 @@ impl CPU {
 
     // ----- Register access -----
     pub(crate) fn read_reg(&self, idx: u8) -> u8 {
-        match idx {
-            0 => self.regs.b.val,
-            1 => self.regs.c.val,
-            2 => self.regs.d.val,
-            3 => self.regs.e.val,
-            4 => self.regs.h.val,
-            5 => self.regs.l.val,
-            6 => 0,
-            7 => self.regs.a.val,
-            _ => 0,
-        }
+        self.regs.read_reg(idx)
     }
 
     pub(crate) fn write_reg(&mut self, idx: u8, val: u8) {
-        match idx {
-            0 => self.regs.b.val = val,
-            1 => self.regs.c.val = val,
-            2 => self.regs.d.val = val,
-            3 => self.regs.e.val = val,
-            4 => self.regs.h.val = val,
-            5 => self.regs.l.val = val,
-            6 => (),
-            7 => self.regs.a.val = val,
-            _ => (),
-        }
+        self.regs.write_reg(idx, val)
     }
 }
