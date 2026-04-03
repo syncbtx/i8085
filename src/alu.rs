@@ -62,30 +62,66 @@ impl Alu {
         }
     }
 
-    fn set_flags_add(flags: &mut Flags, a: u8, b: u8, res: u8, carry_in: bool) {
+    pub fn set_flags_add(flags: &mut Flags, a: u8, b: u8, res: u8, carry_in: bool) {
         let full = a as u16 + b as u16 + carry_in as u16;
-        flags.c.val = full > 0xFF;
+        let carry_out_7 = full > 0xFF;
+        let carry_out_6 = (a as u16 & 0x7F) + (b as u16 & 0x7F) + carry_in as u16 > 0x7F;
+
+        flags.c.val = carry_out_7;
         flags.s.val = (res & 0x80) != 0;
         flags.z.val = res == 0;
         flags.ac.val = ((a & 0x0F) + (b & 0x0F) + carry_in as u8) > 0x0F;
         flags.p.val = res.count_ones() % 2 == 0;
+
+        // Undocumented V and K
+        flags.v.val = carry_out_6 ^ carry_out_7;
+        flags.k.val = flags.v.val ^ flags.s.val;
     }
 
-    fn set_flags_sub(flags: &mut Flags, a: u8, b: u8, res: u8, borrow_in: bool) {
+    pub fn set_flags_sub(flags: &mut Flags, a: u8, b: u8, res: u8, borrow_in: bool) {
         let full = (a as u16).wrapping_sub(b as u16).wrapping_sub(borrow_in as u16);
-        flags.c.val = full > 0xFF;
+        let borrow_out_7 = full > 0xFF; 
+        let borrow_out_6 = (a as u16 & 0x7F).wrapping_sub(b as u16 & 0x7F).wrapping_sub(borrow_in as u16) > 0x7F;
+
+        flags.c.val = borrow_out_7;
         flags.s.val = (res & 0x80) != 0;
         flags.z.val = res == 0;
-        let half = (a & 0x0F).wrapping_sub(b & 0x0F).wrapping_sub(borrow_in as u8);
-        flags.ac.val = half < 0x10;
+        flags.ac.val = (a & 0x0F) < ((b & 0x0F) + borrow_in as u8);
         flags.p.val = res.count_ones() % 2 == 0;
+
+        flags.v.val = borrow_out_6 ^ borrow_out_7;
+        flags.k.val = flags.v.val ^ flags.s.val;
     }
 
-    fn set_flags_logic(flags: &mut Flags, res: u8, is_ana: bool) {
+    pub fn set_flags_logic(flags: &mut Flags, res: u8, is_ana: bool) {
         flags.c.val = false;
         flags.s.val = (res & 0x80) != 0;
         flags.z.val = res == 0;
         flags.ac.val = is_ana;
         flags.p.val = res.count_ones() % 2 == 0;
+        flags.v.val = false;
+        flags.k.val = flags.s.val;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::flags::Flags;
+
+    #[test]
+    fn test_v_and_k_flags() {
+        let mut flags = Flags::new();
+        Alu::set_flags_add(&mut flags, 0x7F, 0x01, 0x80, false);
+        assert!(flags.v.val, "V should be set on 127 + 1");
+        assert!(flags.s.val, "S should be set on 127 + 1");
+        assert!(!flags.k.val, "K should be 0 because V^S = 1^1 = 0");
+        Alu::set_flags_add(&mut flags, 0x80, 0xFF, 0x7F, false);
+        assert!(flags.v.val, "V should be set on -128 + -1");
+        assert!(!flags.s.val, "S should be 0 on -128 + -1");
+        assert!(flags.k.val, "K should be 1 because V^S = 1^0 = 1");
+        Alu::set_flags_sub(&mut flags, 0x00, 0x01, 0xFF, false);
+        assert!(flags.c.val, "C should be set (borrow)");
+        assert!(flags.ac.val, "AC should be set (nibble borrow)");
     }
 }
