@@ -82,9 +82,8 @@ impl Registers{
     }
 
     #[inline]
-    pub fn get_hl(&self) -> u16{
-        ((self.h.val as u16) << 8) | self.l.val as u16
-    }
+    pub fn get_hl(&self) -> u16{((self.h.val as u16) << 8) | self.l.val as u16 }
+    pub fn get_wz(&self) -> u16{((self.w.val as u16) << 8) | self.z.val as u16 }
 
     #[inline]
     pub fn set_bc(&mut self, val: u16){

@@ -3,11 +3,11 @@ pub struct Flag {
 }
 
 pub struct Flags {
-    s: Flag,
-    z: Flag,
-    ac: Flag,
-    p: Flag,
-    c: Flag,
+    pub s: Flag,
+    pub z: Flag,
+    pub ac: Flag,
+    pub p: Flag,
+    pub c: Flag,
 }
 
 impl Flags {
@@ -19,6 +19,10 @@ impl Flags {
             p: Flag { val: false },
             c: Flag { val: false },
         }
+    }
+    
+    pub fn reset(&mut self){
+        *self = Self::new();
     }
 
     pub fn pack(&self) -> u8 {
