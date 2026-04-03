@@ -3,12 +3,12 @@ pub mod bus;
 pub mod cu;
 pub mod cpu;
 pub mod flags;
-pub mod instructions;
 pub mod io;
 pub mod memory;
 pub mod motherboard;
 pub mod pins;
 pub mod registers;
+pub mod utils;
 
 mod microcode {
     include!(concat!(env!("OUT_DIR"), "/microcode.rs"));
