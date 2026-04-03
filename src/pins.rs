@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Pins {
     pub a: u8,
     pub ad: u8,
@@ -36,8 +37,8 @@ impl Pins {
             rd: true,
             wr: true,
             io_m: false,
-            s1: false,
-            s0: false,
+            s1: true,
+            s0: true,
             ready: true,
             trap: false,
             rst7_5: false,
