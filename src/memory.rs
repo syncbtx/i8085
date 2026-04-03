@@ -6,6 +6,8 @@ pub const ROM_START: Addr = 0x0000;
 pub const ROM_END: Addr = 0x0FFF;
 pub const ROM_SIZE: usize = 0x1000;
 
+pub const DEFAULT_IMAGE: [u8; 3] = [0xC3, 0x00, 0x10];
+
 pub struct ROM{
     mem: [u8; ROM_SIZE],
 }
@@ -16,7 +18,7 @@ impl ROM{
     }
 
     fn burn(image: &[u8]) -> Self{
-        assert_eq!(image.len(), ROM_SIZE);
+        assert!(image.len() <= ROM_SIZE);
         let mut rom = ROM{mem: [0; ROM_SIZE]};
         rom.mem[..image.len()].copy_from_slice(image);
         rom
@@ -50,12 +52,12 @@ impl RAM{
 
     #[inline]
     pub fn read(&self, addr: Addr) -> u8{
-        self.mem[(addr) as usize]
+        self.mem[(addr - RAM_START) as usize]
     }
 
     #[inline]
     pub fn write(&mut self, addr: Addr, val: u8){
-        self.mem[(addr) as usize] = val;
+        self.mem[(addr - RAM_START) as usize] = val;
     }
 }
 
@@ -104,6 +106,27 @@ impl Memory{
             self.ram.write(addr, val);
         }
     }
+
+    pub fn read_slice(&self, start: Addr, len: usize) -> Vec<u8> {
+        let mut data = Vec::with_capacity(len);
+        for i in 0..len {
+            data.push(self.read(start.wrapping_add(i as u16)));
+        }
+        data
+    }
+
+    pub fn write_slice(&mut self, start: Addr, data: &[u8]) -> Result<(), &'static str> {
+        let end = start + data.len() as u16 - 1;
+        if start <= ROM_END || end <= ROM_END {
+            return Err("Cannot write to ROM region");
+        }
+        if end > RAM_END {
+            return Err("Write exceeds RAM boundary");
+        }
+        let ram_offset = (start - RAM_START) as usize;
+        self.ram.mem[ram_offset..ram_offset + data.len()].copy_from_slice(data);
+        Ok(())
+    }
 }
 
 impl Index<Addr> for Memory {
@@ -112,7 +135,7 @@ impl Index<Addr> for Memory {
         if index <= ROM_END {
             &self.rom.mem[index as usize]
         } else {
-            &self.ram.mem[index as usize]
+            &self.ram.mem[(index - RAM_START) as usize]
         }
     }
 }
@@ -122,6 +145,6 @@ impl IndexMut<Addr> for Memory {
         if index <= ROM_END {
             panic!("attempt to write to ROM at address {:#06X}", index);
         }
-        &mut self.ram.mem[index as usize]
+        &mut self.ram.mem[(index - RAM_START) as usize]
     }
 }
