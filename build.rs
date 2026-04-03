@@ -68,6 +68,7 @@ fn main() {
     writeln!(f, "const MVI_D_D8: usize =  0x16;").unwrap();
     writeln!(f, "const DCX_D: usize =     0x1B;").unwrap();
     writeln!(f, "const HLT: usize =       0x76;").unwrap();
+    writeln!(f, "const JMP: usize =       0xC3;").unwrap();
     newline!();
 
     writeln!(f, "#[repr(u8)]").unwrap();
@@ -161,6 +162,16 @@ fn main() {
     microcode!(f, MVI_D_D8, M2, T2, MicroOp::MemReadT2);
     microcode!(f, MVI_D_D8, M2, T3, MicroOp::MviR(D));
 
+    microcode!(f, HLT, M1, T4, MicroOp::Halt);
+
+    microcode!(f, JMP, M2, T1, MicroOp::MemReadT1(PC));
+    microcode!(f, JMP, M2, T2, MicroOp::MemReadT2);
+    microcode!(f, JMP, M2, T3, MicroOp::MemReadT3(9)); // Z
+    microcode!(f, JMP, M3, T1, MicroOp::MemReadT1(PC));
+    microcode!(f, JMP, M3, T2, MicroOp::MemReadT2); // Corrected
+    microcode!(f, JMP, M3, T3, MicroOp::MemReadT3(8)); // W
+    microcode!(f, JMP, M3, T4, MicroOp::JmpWz);
+
     writeln!(f, "    table").unwrap();
     writeln!(f, "}};").unwrap();
 
@@ -171,6 +182,9 @@ fn main() {
     writeln!(f, "    last_t[DCX_B][0] = 6;").unwrap();
     writeln!(f, "    last_t[INX_D][0] = 6;").unwrap();
     writeln!(f, "    last_t[DCX_D][0] = 6;").unwrap();
+    writeln!(f, "    last_t[JMP][0] = 4;").unwrap();
+    writeln!(f, "    last_t[JMP][1] = 3;").unwrap();
+    writeln!(f, "    last_t[JMP][2] = 4;").unwrap();
     writeln!(f, "    last_t").unwrap();
     writeln!(f, "}};").unwrap();
 
@@ -197,6 +211,8 @@ fn main() {
     writeln!(f, "    last_m[INR_D]     = 1;").unwrap();
     writeln!(f, "    last_m[DCR_D]     = 1;").unwrap();
     writeln!(f, "    last_m[MVI_D_D8]  = 2;").unwrap();
+    writeln!(f, "    last_m[JMP]       = 3;").unwrap();
+    writeln!(f, "    last_m[HLT]       = 1;").unwrap();
     writeln!(f, "    last_m").unwrap();
     writeln!(f, "}};").unwrap();
 }
