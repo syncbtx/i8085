@@ -16,8 +16,8 @@ impl ControlUnit {
     pub fn new() -> Self {
         ControlUnit {
             ir: 0,
-            m_cycle: 1,
-            t_state: 1,
+            m_cycle: 0,
+            t_state: 0,
             inte: false,
             mask_55: false,
             mask_65: false,
@@ -36,8 +36,8 @@ impl ControlUnit {
 
     pub fn execute_pla(cpu: &mut CPU) {
         let op = cpu.control.ir as usize;
-        let m = (cpu.control.m_cycle - 1) as usize;
-        let t = (cpu.control.t_state - 1) as usize;
+        let m = (cpu.control.m_cycle) as usize;
+        let t = (cpu.control.t_state) as usize;
         match MICROCODE_ROM[op][m][t] {
             MicroOp::Nop => (),
             MicroOp::FetchT1 => cpu.fetch_t1(),
@@ -63,12 +63,7 @@ impl ControlUnit {
             MicroOp::MemReadT2 => cpu.mem_read_t2(),
             MicroOp::MemReadT3(dst) => {
                 let data = cpu.pins.ad;
-                match dst {
-                    0..=7 => cpu.write_reg(dst, data),
-                    8 => cpu.regs.w.val = data,
-                    9 => cpu.regs.z.val = data,
-                    _ => (),
-                }
+                cpu.regs.write_reg(dst, data);
                 cpu.regs.pc.val = cpu.regs.pc.val.wrapping_add(1);
                 cpu.pins.rd = true;
             }
@@ -86,12 +81,7 @@ impl ControlUnit {
                 cpu.mem_write_addr(addr);
             }
             MicroOp::MemWriteT2(src_reg) => {
-                let data = match src_reg {
-                    0..=7 => cpu.read_reg(src_reg),
-                    8 => cpu.regs.w.val,
-                    9 => cpu.regs.z.val,
-                    _ => 0,
-                };
+                let data = cpu.regs.read_reg(src_reg);
                 cpu.addr_write_t2(data);
             }
             MicroOp::MemWriteT3 => cpu.addr_write_t3(),
@@ -220,23 +210,26 @@ impl ControlUnit {
                 cpu.pins.a = 0;
                 cpu.pins.ad = 0;
             }
+            MicroOp::JmpWz => {
+                cpu.regs.pc.val = cpu.regs.get_wz();
+            }
             _ => (),
         }
     }
 
     pub fn advance_clock(&mut self) {
         let op = self.ir as usize;
-        let last_t = T_STATE_COUNT[op][(self.m_cycle - 1) as usize];
+        let last_t = T_STATE_COUNT[op][(self.m_cycle) as usize];
         let last_m = M_CYCLE_COUNT[op];
 
-        if self.t_state < last_t {
+        if self.t_state < last_t - 1 {
             self.t_state += 1;
-        } else if self.m_cycle < last_m {
+        } else if self.m_cycle < last_m - 1 {
             self.m_cycle += 1;
-            self.t_state = 1;
+            self.t_state = 0;
         } else {
-            self.m_cycle = 1;
-            self.t_state = 1;
+            self.m_cycle = 0;
+            self.t_state = 0;
         }
     }
 }
