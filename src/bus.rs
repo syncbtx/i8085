@@ -3,11 +3,11 @@ use crate::memory::{Addr, Memory};
 use crate::pins::Pins;
 
 pub struct SystemBus<'a>{
-    memory: &'a mut Memory,
-    io_ports: &'a mut IOPorts,
-    address_latch: u8,
-    address_lane: u8,
-    data_lane: u8
+    pub(crate) memory: &'a mut Memory,
+    pub(crate) io_ports: &'a mut IOPorts,
+    pub(crate) address_latch: u8,
+    pub(crate) address_lane: u8,
+    pub(crate) data_lane: u8
 }
 
 impl<'a> SystemBus<'a> {
